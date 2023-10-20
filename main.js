@@ -33,14 +33,45 @@ const gltfLoader = new GLTFLoader();
 gltfLoader.setDRACOLoader(dracoLoader);
 
 /**
- * Object
+ * Textures
  */
-const cube = new THREE.Mesh(
-  new THREE.BoxGeometry(1, 1, 1),
-  new THREE.MeshBasicMaterial()
-);
+const bakedTexture = textureLoader.load("./baked.jpg");
+bakedTexture.flipY = false;
+bakedTexture.colorSpace = THREE.SRGBColorSpace;
 
-scene.add(cube);
+/**
+ * Materials
+ */
+const bakedMaterial = new THREE.MeshBasicMaterial({ map: bakedTexture });
+const lightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffe5 });
+
+/**
+ * Model
+ */
+gltfLoader.load("./computer-scene.glb", (gltf) => {
+  console.log("s", gltf);
+
+  const bakedMesh = gltf.scene.children.find((child) => child.name === "baked");
+  const lightAMesh = gltf.scene.children.find(
+    (child) => child.name === "LightA"
+  );
+  const lightBMesh = gltf.scene.children.find(
+    (child) => child.name === "LightB"
+  );
+  const lightCMesh = gltf.scene.children.find(
+    (child) => child.name === "LightC"
+  );
+  const screenMesh = gltf.scene.children.find(
+    (child) => child.name === "Screen"
+  );
+  bakedMesh.material = bakedMaterial;
+  lightAMesh.material = lightMaterial;
+  lightBMesh.material = lightMaterial;
+  lightCMesh.material = lightMaterial;
+  screenMesh.material = lightMaterial;
+
+  scene.add(gltf.scene);
+});
 
 /**
  * Sizes
