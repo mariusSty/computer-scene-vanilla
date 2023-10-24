@@ -1,18 +1,11 @@
-import * as dat from "lil-gui";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 import fireFliesFragmentShader from "./shaders/fireflies/fragment.glsl";
 import fireFliesVertexShader from "./shaders/fireflies/vertex.glsl";
-
-/**
- * Base
- */
-// Debug
-const gui = new dat.GUI({
-  width: 400,
-});
+import screenFragmentShader from "./shaders/screen/fragment.glsl";
+import screenVertexShader from "./shaders/screen/vertex.glsl";
 
 // Canvas
 const canvas = document.querySelector("canvas.webgl");
@@ -46,6 +39,28 @@ bakedTexture.colorSpace = THREE.SRGBColorSpace;
  */
 const bakedMaterial = new THREE.MeshBasicMaterial({ map: bakedTexture });
 const lightMaterial = new THREE.MeshBasicMaterial({ color: 0xffffe5 });
+const firefliesMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
+    uSize: { value: 40.0 },
+    uTime: { value: 0.0 },
+    uColor: { value: new THREE.Color(0xffff44) },
+  },
+  vertexShader: fireFliesVertexShader,
+  fragmentShader: fireFliesFragmentShader,
+  transparent: true,
+  blending: THREE.AdditiveBlending,
+  depthWrite: false,
+});
+const screenMaterial = new THREE.ShaderMaterial({
+  uniforms: {
+    uTime: { value: 0.0 },
+    uColorStart: { value: new THREE.Color(0x090909) },
+    uColorEnd: { value: new THREE.Color(0xffcc00) },
+  },
+  vertexShader: screenVertexShader,
+  fragmentShader: screenFragmentShader,
+});
 
 /**
  * Model
@@ -68,7 +83,7 @@ gltfLoader.load("./computer-scene.glb", (gltf) => {
   lightAMesh.material = lightMaterial;
   lightBMesh.material = lightMaterial;
   lightCMesh.material = lightMaterial;
-  screenMesh.material = lightMaterial;
+  screenMesh.material = screenMaterial;
 
   scene.add(gltf.scene);
 });
@@ -100,26 +115,8 @@ const sizes = {
   width: window.innerWidth,
   height: window.innerHeight,
 };
-const firefliesMaterial = new THREE.ShaderMaterial({
-  uniforms: {
-    uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
-    uSize: { value: 40.0 },
-    uTime: { value: 0.0 },
-  },
-  vertexShader: fireFliesVertexShader,
-  fragmentShader: fireFliesFragmentShader,
-  transparent: true,
-  blending: THREE.AdditiveBlending,
-  depthWrite: false,
-});
 const fireflies = new THREE.Points(firefliesGeometry, firefliesMaterial);
 scene.add(fireflies);
-gui
-  .add(firefliesMaterial.uniforms.uSize, "value")
-  .min(0)
-  .max(500)
-  .step(1)
-  .name("firefliesSize");
 
 window.addEventListener("resize", () => {
   // Update sizes
@@ -179,6 +176,9 @@ const tick = () => {
 
   // Update fireflies
   firefliesMaterial.uniforms.uTime.value = elapsedTime;
+
+  // Update screen
+  screenMaterial.uniforms.uTime.value = elapsedTime;
 
   // Update controls
   controls.update();
